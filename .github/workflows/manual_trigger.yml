@@ -1,0 +1,42 @@
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy the Java app (dev, test, staging, prod)'
+        required: true
+        default: 'dev'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up kubectl
+        uses: steebchen/kubectl@v1
+        with:
+          k8s_url: ${{ secrets.KUBE_URL }}
+          k8s_cluster_ca: ${{ secrets.KUBE_CLUSTER_CA }}
+          k8s_token: ${{ secrets.KUBE_TOKEN }}
+      
+      - name: Deploy to Kubernetes
+        run: |
+          if [ ${{ github.event.inputs.environment }} == 'dev' ]; then
+            kubectl apply -f dev/deployment.yaml
+            kubectl apply -f dev/service.yaml
+            kubectl apply -f dev/ingress.yaml
+          elif [ ${{ github.event.inputs.environment }} == 'test' ]; then
+            kubectl apply -f test/deployment.yaml
+            kubectl apply -f test/service.yaml
+            kubectl apply -f test/ingress.yaml
+          elif [ ${{ github.event.inputs.environment }} == 'staging' ]; then
+            kubectl apply -f staging/deployment.yaml
+            kubectl apply -f staging/service.yaml
+            kubectl apply -f staging/ingress.yaml
+          elif [ ${{ github.event.inputs.environment }} == 'prod' ]; then
+            kubectl apply -f prod/deployment.yaml
+            kubectl apply -f prod/service.yaml
+            kubectl apply -f prod/ingress.yaml
+          fi
